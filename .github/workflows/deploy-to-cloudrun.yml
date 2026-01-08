@@ -1,81 +1,90 @@
-name: Build, Push to Artifact Registry, and Deploy to Cloud Run
+name: CI/CD Pipeline (Multi-Environment)
 
 on:
   push:
     branches:
       - main
+      - develop
 
-env:
-  GCP_PROJECT_ID: ponti-474821
-  GCP_REGION: us-central1
-  REPOSITORY_NAME: auth-api-registry
-  SERVICE_NAME: auth-api
-  IMAGE_NAME: auth-api
-  WORKLOAD_IDENTITY_PROVIDER: 'projects/1056876389857/locations/global/workloadIdentityPools/github-pool/providers/github-provider'
-  SERVICE_ACCOUNT: 'github-actions@ponti-474821.iam.gserviceaccount.com'
-
-# Permisos necesarios para OIDC
 permissions:
   contents: read
   id-token: write
 
+env:
+  # --- CONFIGURACIÓN DE NOMBRES (CAMBIAR ESTO SEGÚN EL REPO) ---
+  REPO_NAME: alpha_auth-api-main   # OJO: Cambiar a "ui-repo" en el otro proyecto
+  IMAGE_NAME: auth-api       # OJO: Cambiar a "ui" en el otro proyecto
+  REGION: us-central1
+
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      # Autenticación usando Workload Identity Federation (sin keys JSON)
-      - name: Authenticate to Google Cloud
-        id: auth
+      # 1. DETECTAR AMBIENTE Y SELECCIONAR MÉTODO DE AUTH
+      - name: Set Environment Config
+        id: env-config
+        run: |
+          if [[ "${{ github.ref }}" == "refs/heads/main" ]]; then
+            echo "🔥 ENVIRONMENT: PRODUCTION"
+            echo "AUTH_METHOD=wif" >> $GITHUB_ENV
+            echo "GCP_PROJECT=${{ secrets.PROD_GCP_PROJECT_ID }}" >> $GITHUB_ENV
+            # Variables de Prod (WIF)
+            echo "WIF_PROVIDER=${{ secrets.PROD_WIF_PROVIDER }}" >> $GITHUB_ENV
+            echo "SERVICE_ACCOUNT=${{ secrets.PROD_SERVICE_ACCOUNT }}" >> $GITHUB_ENV
+            echo "SERVICE_NAME=${{ env.IMAGE_NAME }}-prod" >> $GITHUB_ENV
+          else
+            echo "🚧 ENVIRONMENT: DEVELOPMENT"
+            echo "AUTH_METHOD=json" >> $GITHUB_ENV
+            echo "GCP_PROJECT=${{ secrets.DEV_GCP_PROJECT_ID }}" >> $GITHUB_ENV
+            # Variables de Dev (JSON Key)
+            echo "SERVICE_NAME=${{ env.IMAGE_NAME }}-dev" >> $GITHUB_ENV
+          fi
+
+      # 2. AUTENTICACIÓN (HÍBRIDA)
+      
+      # Opción A: Auth para PROD (Usando Federation/WIF)
+      - name: Authenticate to Google Cloud (Prod)
+        if: env.AUTH_METHOD == 'wif'
         uses: google-github-actions/auth@v2
         with:
-          workload_identity_provider: ${{ env.WORKLOAD_IDENTITY_PROVIDER }}
+          workload_identity_provider: ${{ env.WIF_PROVIDER }}
           service_account: ${{ env.SERVICE_ACCOUNT }}
 
+      # Opción B: Auth para DEV (Usando tu nueva JSON Key)
+      - name: Authenticate to Google Cloud (Dev)
+        if: env.AUTH_METHOD == 'json'
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.DEV_GCP_SA_KEY }}
+
+      # 3. CONFIGURACIÓN Y BUILD
       - name: Set up Cloud SDK
         uses: google-github-actions/setup-gcloud@v2
         with:
-          project_id: ${{ env.GCP_PROJECT_ID }}
+          project_id: ${{ env.GCP_PROJECT }}
 
-      - name: Configure Docker for Artifact Registry
+      - name: Configure Docker
+        run: gcloud auth configure-docker us-central1-docker.pkg.dev
+
+      - name: Build and Push
+        id: build
         run: |
-          gcloud auth configure-docker ${{ env.GCP_REGION }}-docker.pkg.dev
+          TAG="${{ github.sha }}"
+          IMAGE="us-central1-docker.pkg.dev/${{ env.GCP_PROJECT }}/${{ env.REPO_NAME }}/${{ env.IMAGE_NAME }}:$TAG"
+          
+          docker build -t $IMAGE .
+          docker push $IMAGE
+          echo "image=$IMAGE" >> $GITHUB_OUTPUT
 
-      - name: Build, tag, and push image to Artifact Registry
-        id: build-image
-        run: |
-          IMAGE_TAG=${GITHUB_SHA::7}
-          
-          FULL_IMAGE_NAME=${{ env.GCP_REGION }}-docker.pkg.dev/${{ env.GCP_PROJECT_ID }}/${{ env.REPOSITORY_NAME }}/${{ env.IMAGE_NAME }}:$IMAGE_TAG
-          
-          echo "🏗️ Building image: $FULL_IMAGE_NAME"
-          docker build -t $FULL_IMAGE_NAME .
-          
-          echo "📤 Pushing image to Artifact Registry..."
-          docker push $FULL_IMAGE_NAME
-          
-          echo "image=$FULL_IMAGE_NAME" >> $GITHUB_OUTPUT
-          echo "✅ Image pushed successfully"
-
+      # 4. DESPLIEGUE
       - name: Deploy to Cloud Run
         run: |
-          echo "🚀 Deploying to Cloud Run..."
           gcloud run deploy ${{ env.SERVICE_NAME }} \
-            --image=${{ steps.build-image.outputs.image }} \
+            --image=${{ steps.build.outputs.image }} \
+            --region=${{ env.REGION }} \
             --platform=managed \
-            --region=${{ env.GCP_REGION }} \
             --allow-unauthenticated \
             --quiet
-          
-          echo "✅ Deployment completed"
-
-      - name: Get Service URL
-        run: |
-          SERVICE_URL=$(gcloud run services describe ${{ env.SERVICE_NAME }} \
-            --region=${{ env.GCP_REGION }} \
-            --format='value(status.url)')
-          echo "🌐 Service URL: $SERVICE_URL"
-          echo "SERVICE_URL=$SERVICE_URL" >> $GITHUB_ENV
