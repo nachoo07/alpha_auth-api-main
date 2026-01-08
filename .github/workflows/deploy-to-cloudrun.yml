@@ -89,5 +89,5 @@ jobs:
             --allow-unauthenticated \
             --quiet \
             --timeout 3600 \
-            --startup-cpu-boost \
-            --http2
+            --cpu-boost \
+            --use-http2
