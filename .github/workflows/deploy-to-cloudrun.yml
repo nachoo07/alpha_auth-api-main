@@ -87,4 +87,7 @@ jobs:
             --region=${{ env.REGION }} \
             --platform=managed \
             --allow-unauthenticated \
-            --quiet
+            --quiet \
+            --timeout 3600 \
+            --startup-cpu-boost \
+            --http2
