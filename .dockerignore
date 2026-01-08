@@ -1,0 +1,36 @@
+# Version control
+.git
+.gitignore
+
+# Docker files
+.dockerignore
+Dockerfile*
+docker-compose*.yml
+
+# Environment and secrets
+.env*
+
+# IDE and editor files
+.vscode
+.vs
+.idea
+.classpath
+.project
+.settings
+.toolstarget
+*.*proj.user
+
+# Logs and caches
+*.log
+.DS_Store
+Thumbs.db
+
+# Archives
+*.tar.gz
+*.tgz
+*.iso
+*.raw
+
+# Documentation
+*.md
+LICENSE
