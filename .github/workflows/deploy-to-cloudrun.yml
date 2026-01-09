@@ -90,4 +90,21 @@ jobs:
             --quiet \
             --timeout 3600 \
             --cpu-boost \
-            --use-http2
+            --use-http2 \
+            --add-cloudsql-instances=${{ secrets.DB_INSTANCE_NAME }} \
+            --set-env-vars="\
+            DEPLOY_PLATFORM=gcp,\
+            DEPLOY_ENV=${{ github.ref == 'refs/heads/main' && 'prod' || 'dev' }},\
+            GO_ENVIRONMENT=${{ github.ref == 'refs/heads/main' && 'production' || 'development' }},\
+            GIN_MODE=release,\
+            DB_TYPE=postgres,\
+            DB_HOST=/cloudsql/${{ secrets.DB_INSTANCE_NAME }},\
+            DB_PORT=5432,\
+            DB_NAME=${{ secrets.DB_NAME }},\
+            DB_USER=${{ secrets.DB_USER }},\
+            DB_PASSWORD=${{ secrets.DB_PASSWORD }},\
+            DB_SSL_MODE=disable,\
+            SSL_MODE=disable,\
+            INSTANCE_CONNECTION_NAME=${{ secrets.DB_INSTANCE_NAME }}"
+
+ 
