@@ -38,7 +38,7 @@ jobs:
           else
             echo "🚧 ENVIRONMENT: DEVELOPMENT"
             echo "AUTH_METHOD=json" >> $GITHUB_ENV
-            echo "GCP_PROJECT=${{ secrets.DEV_GCP_PROJECT_ID }}" >> $GITHUB_ENV
+            echo "GCP_PROJECT=${{ secrets.GCP_PROJECT_ID }}" >> $GITHUB_ENV  # <-- Corregido
             # Variables de Dev (JSON Key)
             echo "SERVICE_NAME=${{ env.IMAGE_NAME }}-dev" >> $GITHUB_ENV
           fi
@@ -58,7 +58,7 @@ jobs:
         if: env.AUTH_METHOD == 'json'
         uses: google-github-actions/auth@v2
         with:
-          credentials_json: ${{ secrets.DEV_GCP_SA_KEY }}
+          credentials_json: ${{ secrets.GCP_SA_KEY }}  # <-- Corregido
 
       # 3. CONFIGURACIÓN Y BUILD
       - name: Set up Cloud SDK
