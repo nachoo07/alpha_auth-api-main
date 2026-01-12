@@ -92,20 +92,7 @@ jobs:
             --cpu-boost \
             --use-http2 \
             --add-cloudsql-instances=${{ secrets.DB_INSTANCE_NAME }} \
-            --set-env-vars="\
-            DEPLOY_PLATFORM=gcp,\
-            DEPLOY_ENV=${{ github.ref == 'refs/heads/main' && 'prod' || 'dev' }},\
-            GO_ENVIRONMENT=${{ github.ref == 'refs/heads/main' && 'production' || 'development' }},\
-            GIN_MODE=release,\
-            DB_TYPE=postgres,\
-            DB_HOST=/cloudsql/ponti-dev:us-central1:free-trial-first-project,\
-            DB_PORT=5432,\
-            DB_NAME=ponti_db,\
-            DB_USER=postgres,\
-            DB_PASSWORD=Soalen2026Secure,\
-            DB_SSL_MODE=disable,\
-            SSL_MODE=disable,\
-            INSTANCE_CONNECTION_NAME=${{ secrets.DB_INSTANCE_NAME }}"
+            --set-env-vars="DEPLOY_PLATFORM=gcp,DEPLOY_ENV=${{ github.ref == 'refs/heads/main' && 'prod' || 'dev' }},GO_ENVIRONMENT=${{ github.ref == 'refs/heads/main' && 'production' || 'development' }},GIN_MODE=release,DB_TYPE=postgres,DB_HOST=/cloudsql/ponti-dev:us-central1:free-trial-first-project,DB_PORT=5432,DB_NAME=ponti_db,DB_USER=postgres,DB_PASSWORD=Soalen2026Secure,DB_SSL_MODE=disable,SSL_MODE=disable,INSTANCE_CONNECTION_NAME=${{ secrets.DB_INSTANCE_NAME }}"
 
 
  
