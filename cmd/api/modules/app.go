@@ -70,6 +70,7 @@ func NewApp() *fx.App {
 			httpserver.NewHTTPGinServer,
 
 			MetricMiddleware,
+			CORSMiddleware,
 		),
 	}
 
