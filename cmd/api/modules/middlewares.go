@@ -91,7 +91,8 @@ func RegisterMiddlewares(router *gin.Engine, params EnabledMiddlewares) {
 		c.Next()
 
 		if len(c.Errors) > 0 {
-			c.AbortWithStatusJSON(500, gin.H{"error": "Internal Server Error"})
-		}
+            // Mejor para desarrollo: ver qué pasó
+            c.JSON(-1, gin.H{"errors": c.Errors.Errors()}) 
+        }
 	})
 }
