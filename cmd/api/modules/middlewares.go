@@ -1,12 +1,7 @@
 package modules
 
 import (
-	"os"
-	"strings"
-	"time"
-
 	"github.com/AlphaCodinggroup/alpha_auth-api/pkg/metrics"
-	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"go.uber.org/fx"
 )
@@ -49,39 +44,6 @@ func MetricMiddleware() SharedMiddleware {
 	}
 }
 
-// CORSMiddleware configures CORS headers for all routes.
-// Allowed origins are read from env var ALLOWED_ORIGINS (comma separated).
-// If ALLOWED_ORIGINS is "*", credentials are disabled to comply with CORS spec.
-func CORSMiddleware() SharedMiddleware {
-	raw := os.Getenv("ALLOWED_ORIGINS")
-	var origins []string
-	if raw == "" {
-		// Default: allow all for local/dev unless overridden
-		origins = []string{"*"}
-	} else {
-		origins = strings.Split(raw, ",")
-	}
-
-	allowCredentials := true
-	for _, o := range origins {
-		if strings.TrimSpace(o) == "*" {
-			allowCredentials = false
-			break
-		}
-	}
-
-	cfg := cors.Config{
-		AllowOrigins:     origins,
-		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
-		AllowHeaders:     []string{"Origin", "Content-Type", "Accept", "Authorization"},
-		ExposeHeaders:    []string{"Content-Length"},
-		AllowCredentials: allowCredentials,
-		MaxAge:           12 * time.Hour,
-	}
-
-	return SharedMiddleware{Middleware: cors.New(cfg)}
-}
-
 func RegisterMiddlewares(router *gin.Engine, params EnabledMiddlewares) {
 	for _, mw := range params.SharedMiddlewares {
 		router.Use(mw)
@@ -91,8 +53,7 @@ func RegisterMiddlewares(router *gin.Engine, params EnabledMiddlewares) {
 		c.Next()
 
 		if len(c.Errors) > 0 {
-            // Mejor para desarrollo: ver qué pasó
-            c.JSON(-1, gin.H{"errors": c.Errors.Errors()}) 
-        }
+			c.AbortWithStatusJSON(500, gin.H{"error": "Internal Server Error"})
+		}
 	})
 }

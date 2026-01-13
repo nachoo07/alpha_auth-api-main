@@ -1,6 +1,7 @@
 package modules
 
 import (
+	"log"
 	"os"
 
 	"github.com/AlphaCodinggroup/alpha_auth-api/cmd/api/app/handlers"
@@ -23,8 +24,9 @@ func NewApp() *fx.App {
 	env := environment.GetFromString(os.Getenv("GO_ENVIRONMENT"))
 
 	if env == environment.Local {
-		// Cargar .env solo si existe, sin fallar si no está
-		godotenv.Load(".env")
+		if err := godotenv.Load(".env"); err != nil {
+			log.Fatalf("Error loading .env file: %v", err)
+		}
 	}
 
 	authcontext.NewLogger()
@@ -70,7 +72,6 @@ func NewApp() *fx.App {
 			httpserver.NewHTTPGinServer,
 
 			MetricMiddleware,
-			CORSMiddleware,
 		),
 	}
 

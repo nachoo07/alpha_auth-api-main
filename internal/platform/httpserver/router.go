@@ -34,7 +34,7 @@ func StartServer(lc fx.Lifecycle, srv *http.Server) *http.Server {
 					log.Fatalf("Error running server: %v", err)
 				}
 			}()
-			log.Printf("Server running on %s", srv.Addr)
+			log.Println("Server running on port 8080")
 			return nil
 		},
 		OnStop: func(ctx context.Context) error {

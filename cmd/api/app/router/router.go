@@ -44,10 +44,5 @@ func RegisterRouter(router *gin.Engine, md AuthMiddleware, loginHdl LoginHandler
 	protectedRouter.Use(md.ValidateRolMiddleware())
 	newSignupRouter(singUpHdl, protectedRouter)
 
-	// Health check endpoint for Cloud Run
-	router.GET("/health", func(ctx *gin.Context) {
-		ctx.JSON(http.StatusOK, gin.H{"status": "ok"})
-	})
-
 	//protectedRouter.GET("/ping", srv.loginController.Ping)
 }
