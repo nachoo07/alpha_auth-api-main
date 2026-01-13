@@ -69,6 +69,9 @@ jobs:
       - name: Configure Docker
         run: gcloud auth configure-docker us-central1-docker.pkg.dev
 
+      - name: Create .env from example
+        run: cp .env.example .env
+
       - name: Build and Push
         id: build
         run: |
