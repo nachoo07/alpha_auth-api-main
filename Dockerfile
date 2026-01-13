@@ -13,4 +13,8 @@ RUN go build -o /usr/local/bin/app ./cmd/api/main.go
 
 EXPOSE 8080
 
+COPY entrypoint.sh /usr/local/bin/entrypoint.sh
+RUN chmod +x /usr/local/bin/entrypoint.sh
+
+ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
 CMD ["/usr/local/bin/app"]
